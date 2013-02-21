@@ -1,0 +1,31 @@
+SIMPLE-SOLUTION-TECH DEFINITIONS ::= BEGIN
+
+IMPORTS
+	enterprises,
+	MODULE-IDENTITY
+			FROM SNMPv2-SMI;
+	
+
+simpleSolutionTech MODULE-IDENTITY
+	LAST-UPDATED "201202161500Z"
+	ORGANIZATION "SIMPLE SOLUTION TECHNOLOGIES"
+	CONTACT-INFO
+			"Email: godberg@gmail.com
+			 Web: http://simplesoltuiontechnologies.net
+			      http://simplesolutiontechnologies.org"
+	DESCRIPTION
+			"This MIB module is for defining the nodes
+			 of the Simple Solution Technolgies enterprise"
+	REVISION "201202161500Z" -- Feb 16, 2012 15:00:00 Hours
+	DESCRIPTION
+			"The initial version."
+							::= { enterprises 40790 }
+							
+sstHardware OBJECT IDENTIFIER 
+							::= { simpleSolutionTech 1 }
+							
+sstSoftware OBJECT IDENTIFIER 
+							::= { simpleSolutionTech 2 }
+							
+
+END							

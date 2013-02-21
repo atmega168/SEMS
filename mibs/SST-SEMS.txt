@@ -1,0 +1,106 @@
+SST-SEMS DEFINITIONS ::= BEGIN
+
+IMPORTS
+	 MODULE-IDENTITY, Unsigned32, OBJECT-TYPE,
+	 NOTIFICATION-TYPE 
+			FROM SNMPv2-SMI
+	sstHardware
+			FROM SIMPLE-SOLUTION-TECH
+	DisplayString   
+			FROM SNMPv2-TC;
+
+sstSems MODULE-IDENTITY
+	LAST-UPDATED "201202161500Z"
+	ORGANIZATION "SIMPLE SOLUTION TECHNOLOGIES"
+	CONTACT-INFO
+			"Email: godberg@gmail.com
+			 Web: http://simplesoltuiontechnologies.net
+			      http://simplesolutiontechnologies.org"
+	DESCRIPTION
+			"This MIB module is for describing the 
+			 Server Enviorment Monitoring Sytem or SEMS
+			 for short. SEMS is a system based on the 
+			 Raspberry Pi hardware. Currently Has Temp
+			 and Relitive Humidity Sensors implemented."
+	REVISION "201202161500Z" -- Feb 16, 2012 15:00:00 Hours
+	DESCRIPTION
+			"The initial version."
+							::= { sstHardware 1 }
+							
+semsStatus OBJECT IDENTIFIER 
+							::= { sstSems 1 }
+semsCtrl   OBJECT IDENTIFIER 
+							::= { sstSems 2 }						
+semsNotice OBJECT IDENTIFIER 
+							::= { sstSems 3 }
+							
+semsSensorTable OBJECT-TYPE
+	SYNTAX	SEQUENCE OF semsSensorEntry
+	MAX-ACCESS not-accessible
+	STATUS current
+	DESCRIPTION
+		"SEMS Sensor Table."
+							::= {semsStatus 1}
+	
+semsSensorEntry OBJECT-TYPE 
+	SYNTAX	SemsSensorEntry
+	MAX-ACCESS not-accessible
+	STATUS current
+	DESCRIPTION
+		"A sensor entry for semsSensorTable"
+	INDEX { semsSensorPortNbr }
+							::= {semsSensorTable 1}
+							
+SemsSensorEntry ::=
+	SEQUENCE {
+		semsSensorPortNbr Unsigned32,
+		semsSensorStatus  INTEGER,
+		semsSensorType    INTEGER,
+		semsSensorData    DisplayString,
+		semsSensorLoc     DisplayString
+	}
+
+semsSensorPortNbr OBJECT-TYPE
+	SYNTAX	Unsigned32 (1..8)
+	MAX-ACCESS not-accessible
+	STATUS current
+	DESCRIPTION
+		"Port Number and table index"
+	::= {semsSensorEntry 1}
+	
+semsSensorStauts OBJECT-TYPE
+	SYNTAX	INTEGER 
+				{ isConnected(1), notConnected(2) }
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION
+		"Sensor Port Status"
+	::= {semsSensorEntry 2}
+
+semsSensorType OBJECT-TYPE
+	SYNTAX	INTEGER 
+				{ temp(1) , tempHumididty (2) }
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION
+		"The sensor type"
+	::= {semsSensorEntry 3}
+
+semsSensorData OBJECT-TYPE
+	SYNTAX	DisplayString
+	MAX-ACCESS read-only
+	STATUS current
+	DESCRIPTION
+		"Textual Data from the Sensors"
+	::= {semsSensorEntry 4}
+
+semsSensorLoc OBJECT-TYPE
+	SYNTAX	DisplayString
+	MAX-ACCESS read-write
+	STATUS current
+	DESCRIPTION
+		"Textual Data containing the Location 
+		 of the sensor"
+	::= {semsSensorEntry 5}
+
+END	
