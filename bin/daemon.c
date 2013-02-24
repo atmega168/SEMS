@@ -12,8 +12,7 @@ stop_server(int a) {
     keep_running = 0;
 }
 
-int
-main (int argc, char **argv) {
+int main (int argc, char **argv) {
   int agentx_subagent=1; /* change this if you want to be a SNMP master agent */
   int background = 0; /* change this if you want to run in the background */
   int syslog = 0; /* change this if you want to use syslog */
@@ -52,7 +51,7 @@ main (int argc, char **argv) {
   }
 
   /* example-demon will be used to read example-demon.conf files. */
-  init_snmp("example-demon");
+  init_snmp("sems");
 
   /* If we're going to be a snmp master agent, initial the ports */
   if (!agentx_subagent)
@@ -63,7 +62,7 @@ main (int argc, char **argv) {
   signal(SIGTERM, stop_server);
   signal(SIGINT, stop_server);
 
-  snmp_log(LOG_INFO,"example-demon is up and running.\n");
+  snmp_log(LOG_INFO,"sems is up and running.\n");
 
   /* your main loop here... */
   while(keep_running) {

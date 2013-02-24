@@ -7,22 +7,15 @@
 #include <net-snmp/net-snmp-includes.h>
 #include <net-snmp/agent/net-snmp-agent-includes.h>
 #include "semsStatus.h"
-
+#include "semsSensorCom.h"
 
 /** Initialize the semsSensorTable table by defining its contents and how it's structured */
 
 unsigned int indx;
 
-typedef struct sensorTable { 
-	unsigned int port;
-	int status;
-	int type;
-	char* data;
-        char* location;
-} sensorTable;
+Sensor* sensors[8];
 
-sensorTable* sensors[8];
-
+int fd;
 
 void
 initialize_table_semsSensorTable(void)
@@ -69,19 +62,22 @@ initialize_table_semsSensorTable(void)
                                                         OID_LENGTH(semsSensorTable_oid),
                                                         HANDLER_CAN_RWRITE),
                             table_set, NULL);
-   /*
+
    for (indx = 0; indx < 8; indx++){
-	sensorTable t = {0,0,0,NULL,NULL};
-	t.port = indx+1;
+	Sensor t;
+	Sensor_init(fd,indx,&t);
+	t.port = indx;
         sensors[indx] = &t;
    	row = netsnmp_create_table_data_row();
-   	netsnmp_table_row_add_index(row,ASN_UNSIGNED,&indx,sizeof(indx));
-   	netsnmp_set_row_column(row, 1, ASN_INTEGER,&sensors[indx]->status,sizeof(sensors[indx]->status));
-   	netsnmp_mark_row_column_writable(row, 1, 0);        // make writable via SETs 
+   	netsnmp_table_row_add_index(row,ASN_UNSIGNED,&sensors[indx]->port,sizeof(sensors[indx]->port));
+	//netsnmp_set_row_column(row,1,ASN_UNSIGNED,&sensors[indx]->port,sizeof(sensors[indx]->port));
+   	netsnmp_set_row_column(row,2, ASN_INTEGER,&sensors[indx]->status,sizeof(sensors[indx]->status));
+	netsnmp_set_row_column(row,3, ASN_INTEGER,&sensors[indx]->type,sizeof(sensors[indx]->type));
+	netsnmp_set_row_column(row,4, ASN_OCTET_STR,sensors[indx]->data,LOCATION_BUFF_SIZE);
+   	netsnmp_mark_row_column_writable(row, 2, 0);        // make writable via SETs 
    	netsnmp_table_dataset_add_row(table_set, row);
    }
    netsnmp_register_auto_data_table(table_set, NULL);
-   */
 }
 
 
@@ -91,6 +87,9 @@ init_semsStatus(void)
 {
 
   /* here we initialize all the tables we're planning on supporting */
+    fd = semsInitComs();
+    if (fd < 0)
+	exit(1); 
     initialize_table_semsSensorTable();
 }
 
@@ -105,6 +104,8 @@ semsSensorTable_handler(
        already been processed by the master table_dataset handler, but
        this gives you chance to act on the request in some other way
        if need be. */
+//    for(indx = 0; indx < 8; indx++)
+//	semsUpdateSensor(fd,sensors[indx]);
 
     return SNMP_ERR_NOERROR;
 }
