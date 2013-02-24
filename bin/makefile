@@ -10,13 +10,13 @@
 CC=gcc
 
 OBJS1=snmpdemoapp.o
-OBJS2=daemon.o semsStatus.o
+OBJS2=daemon.o semsStatus.o semsSensorCom.o
 OBJS3=asyncapp.o
 TARGETS=daemon snmpdemoapp asyncapp
 
 CFLAGS=-I. `net-snmp-config --cflags`
 BUILDLIBS=`net-snmp-config --libs`
-BUILDAGENTLIBS=`net-snmp-config --agent-libs`
+BUILDAGENTLIBS=`net-snmp-config --agent-libs` -lwiringPi -lbcm2835 -lrt
 
 # shared library flags (assumes gcc)
 DLFLAGS=-fPIC -shared
