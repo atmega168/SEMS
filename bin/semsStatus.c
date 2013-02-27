@@ -8,20 +8,39 @@
 #include <net-snmp/agent/net-snmp-agent-includes.h>
 #include "semsStatus.h"
 #include "semsSensorCom.h"
+#include <signal.h>
 
 /** Initialize the semsSensorTable table by defining its contents and how it's structured */
 
 unsigned int indx;
-
 Sensor* sensors[8];
-
+netsnmp_table_row* rows[8];
 int fd;
+netsnmp_table_data_set *table_set;
+
+
+
+void update_table(void) {
+   netsnmp_table_row*  row;
+   for (indx = 0; indx < 8; indx++){
+	netsnmp_table_dataset_remove_and_delete_row (table_set,rows[indx]);
+        row = netsnmp_create_table_data_row();
+        netsnmp_table_row_add_index(row,ASN_UNSIGNED,&sensors[indx]->port,sizeof(sensors[indx]->port));
+        netsnmp_set_row_column(row,2, ASN_INTEGER,&sensors[indx]->status,sizeof(sensors[indx]->status));
+        netsnmp_set_row_column(row,3, ASN_INTEGER,&sensors[indx]->type,sizeof(sensors[indx]->type));
+        netsnmp_set_row_column(row,4, ASN_OCTET_STR,sensors[indx]->data,strlen(sensors[indx]->data));
+        netsnmp_mark_row_column_writable(row, 2, 0);        // make writable via SETs
+        netsnmp_table_dataset_add_row(table_set, row);
+	rows[indx] = row;
+   }
+}
+
+
 
 void
 initialize_table_semsSensorTable(void)
 {
     const oid semsSensorTable_oid[] = {1,3,6,1,4,1,40790,1,1,1,1};
-    netsnmp_table_data_set *table_set;
     netsnmp_table_row *row;
 
     /* create the table structure itself */
@@ -52,7 +71,6 @@ initialize_table_semsSensorTable(void)
                                             COLUMN_SEMSSENSORLOC, ASN_OCTET_STR, 1,
                                             NULL, 0,
                               0);
-    
 
     /* registering the table with the master agent */
     /* note: if you don't need a subhandler to deal with any aspects
@@ -64,20 +82,27 @@ initialize_table_semsSensorTable(void)
                             table_set, NULL);
 
    for (indx = 0; indx < 8; indx++){
-	Sensor t;
-	Sensor_init(fd,indx,&t);
-	t.port = indx;
-        sensors[indx] = &t;
+	Sensor* t = (Sensor*)malloc(sizeof(Sensor));
+	Sensor_init(fd,indx,t);
+	sensors[indx] = t;
    	row = netsnmp_create_table_data_row();
    	netsnmp_table_row_add_index(row,ASN_UNSIGNED,&sensors[indx]->port,sizeof(sensors[indx]->port));
-	//netsnmp_set_row_column(row,1,ASN_UNSIGNED,&sensors[indx]->port,sizeof(sensors[indx]->port));
    	netsnmp_set_row_column(row,2, ASN_INTEGER,&sensors[indx]->status,sizeof(sensors[indx]->status));
 	netsnmp_set_row_column(row,3, ASN_INTEGER,&sensors[indx]->type,sizeof(sensors[indx]->type));
-	netsnmp_set_row_column(row,4, ASN_OCTET_STR,sensors[indx]->data,LOCATION_BUFF_SIZE);
+	netsnmp_set_row_column(row,4, ASN_OCTET_STR,sensors[indx]->data,strlen(sensors[indx]->data));
    	netsnmp_mark_row_column_writable(row, 2, 0);        // make writable via SETs 
    	netsnmp_table_dataset_add_row(table_set, row);
+	rows[indx] = row;
    }
    netsnmp_register_auto_data_table(table_set, NULL);
+}
+
+updateData(int sig) {
+  //netsnmp_table_dataset_delete_all_data(table_set->default_row); 
+  for(indx = 0; indx < 8; indx++) 
+	semsUpdateSensor(fd,sensors[indx]);
+  update_table();
+  alarm(30);
 }
 
 
@@ -91,6 +116,11 @@ init_semsStatus(void)
     if (fd < 0)
 	exit(1); 
     initialize_table_semsSensorTable();
+    if (signal(SIGALRM, updateData) == SIG_ERR){
+ 	 printf("\ncan't catch sigalarm\n");
+ 	 exit(1);
+    }
+   alarm(30);
 }
 
 /** handles requests for the semsSensorTable table, if anything else needs to be done */
@@ -104,8 +134,7 @@ semsSensorTable_handler(
        already been processed by the master table_dataset handler, but
        this gives you chance to act on the request in some other way
        if need be. */
-//    for(indx = 0; indx < 8; indx++)
-//	semsUpdateSensor(fd,sensors[indx]);
-
     return SNMP_ERR_NOERROR;
 }
+
+
