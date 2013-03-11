@@ -25,10 +25,12 @@ void update_table(void) {
    for (indx = 0; indx < 8; indx++){
 	netsnmp_table_dataset_remove_and_delete_row (table_set,rows[indx]);
         row = netsnmp_create_table_data_row();
-        netsnmp_table_row_add_index(row,ASN_UNSIGNED,&sensors[indx]->port,sizeof(sensors[indx]->port));
+        netsnmp_table_row_add_index(row,ASN_UNSIGNED,&sensors[indx]->port,sizeof(sensors[indx]->port));	
         netsnmp_set_row_column(row,2, ASN_INTEGER,&sensors[indx]->status,sizeof(sensors[indx]->status));
         netsnmp_set_row_column(row,3, ASN_INTEGER,&sensors[indx]->type,sizeof(sensors[indx]->type));
-        netsnmp_set_row_column(row,4, ASN_OCTET_STR,sensors[indx]->data,strlen(sensors[indx]->data));
+        netsnmp_set_row_column(row,4, ASN_INTEGER,&sensors[indx]->temp,sizeof(sensors[indx]->temp));
+        netsnmp_set_row_column(row,5, ASN_UNSIGNED,&sensors[indx]->rh,sizeof(sensors[indx]->rh));
+        netsnmp_set_row_column(row,6, ASN_OCTET_STR,sensors[indx]->location,strlen(sensors[indx]->location));
         netsnmp_mark_row_column_writable(row, 2, 0);        // make writable via SETs
         netsnmp_table_dataset_add_row(table_set, row);
 	rows[indx] = row;
@@ -49,8 +51,11 @@ initialize_table_semsSensorTable(void)
     /* comment this out or delete if you don't support creation of new rows */
     table_set->allow_creation = 1;
 
+
+
     /***************************************************
-     * Adding indexes     */
+     * Adding indexes
+     */
     DEBUGMSGTL(("initialize_table_semsSensorTable",
                 "adding indexes to table semsSensorTable\n"));
     netsnmp_table_set_add_indexes(table_set,
@@ -58,7 +63,7 @@ initialize_table_semsSensorTable(void)
                            0);
 
     DEBUGMSGTL(("initialize_table_semsSensorTable",
-                "adding column types to table semsSensorTable\n"));		 
+                "adding column types to table semsSensorTable\n"));
     netsnmp_table_set_multi_add_default_row(table_set,
                                             COLUMN_SEMSSENSORPORTNBR, ASN_UNSIGNED, 0,
                                             NULL, 0,
@@ -66,7 +71,9 @@ initialize_table_semsSensorTable(void)
                                             NULL, 0,
                                             COLUMN_SEMSSENSORTYPE, ASN_INTEGER, 0,
                                             NULL, 0,
-                                            COLUMN_SEMSSENSORDATA, ASN_OCTET_STR, 0,
+                                            COLUMN_SEMSSENSORTEMP, ASN_INTEGER, 0,
+                                            NULL, 0,
+                                            COLUMN_SEMSSENSORRH, ASN_UNSIGNED, 0,
                                             NULL, 0,
                                             COLUMN_SEMSSENSORLOC, ASN_OCTET_STR, 1,
                                             NULL, 0,
@@ -89,7 +96,9 @@ initialize_table_semsSensorTable(void)
    	netsnmp_table_row_add_index(row,ASN_UNSIGNED,&sensors[indx]->port,sizeof(sensors[indx]->port));
    	netsnmp_set_row_column(row,2, ASN_INTEGER,&sensors[indx]->status,sizeof(sensors[indx]->status));
 	netsnmp_set_row_column(row,3, ASN_INTEGER,&sensors[indx]->type,sizeof(sensors[indx]->type));
-	netsnmp_set_row_column(row,4, ASN_OCTET_STR,sensors[indx]->data,strlen(sensors[indx]->data));
+	netsnmp_set_row_column(row,4, ASN_INTEGER,&sensors[indx]->temp,sizeof(sensors[indx]->temp));
+	netsnmp_set_row_column(row,5, ASN_UNSIGNED,&sensors[indx]->rh,sizeof(sensors[indx]->rh));
+        netsnmp_set_row_column(row,6, ASN_OCTET_STR,sensors[indx]->location,strlen(sensors[indx]->location)); 
    	netsnmp_mark_row_column_writable(row, 2, 0);        // make writable via SETs 
    	netsnmp_table_dataset_add_row(table_set, row);
 	rows[indx] = row;

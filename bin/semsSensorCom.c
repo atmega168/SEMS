@@ -21,12 +21,9 @@
 
 int rd,i;
 char rd_buff[RD_BUFF_SIZE];
-char data[PORTS_TOTAL][RD_BUFF_SIZE];
 char location[PORTS_TOTAL][LOCATION_BUFF_SIZE];
 
 struct termios settings;
-
-
 
 
 void semsComDisableMultiplex() {
@@ -89,7 +86,7 @@ float semsGetRH(int fd) {
         if (i>0)
 			rh = atof(rd_buff);
 		count++;
-    }
+	}
 	if (rh > 100) {
 		return 100;
 	} else if (rh < 0) {
@@ -176,32 +173,40 @@ void semsUpdateSensorInfo(int fd,Sensor* s) {
 	s->status = 0;					//But dissable the sensor.
 	return;
 }
+
 void semsUpdateSensor(int fd,Sensor* s) {
 	semsSelectMultiplex(s->port-1);
 	semsUpdateSensorInfo(fd,s);
 	float temp;
 	float rh;
 	if (s->status == 1) {  //Is the sensor an active one?
-		if (s->type == SENSOR_TYPE_TEMP) {
+		if (s->type == SENSOR_TYPE_TEMP || s->type == SENSOR_TYPE_TH) {
 			temp = semsGetTemp(fd);
-			sprintf(s->data,"%.2f",temp);
-		} else if (s->type == SENSOR_TYPE_TH) {
-			temp = semsGetTemp(fd);
+			temp += 0.005;
+			temp *= 100;
+			printf("%f : ",temp);
+			s->temp = (int)temp;
+			printf("%d \n",s->temp);
+		if (s->type == SENSOR_TYPE_TH) {
 			rh = semsGetRH(fd);
-			sprintf(s->data,"%.2f:%.2f",temp,rh);
+			rh = rh>100 ? 100 : rh;
+			rh = rh<0 ? 0 : rh;
+			s->rh = (unsigned int)(rh+.5);
 		}
+	    }
 	}
 	return;
 }
 
 void Sensor_init(int fd, unsigned int port, Sensor * s) {
 	if (port <= PORTMAX) {
-		s->data = &data[port];
-		s->location = &location[port];
+		s->temp =0;
+		s->rh = 0;
+		s->location = location[port];
 		s->port = port+1;
 		semsUpdateSensor(fd,s);
 		return;
-	} 
+	}
 	s->status = 0;
 	return;
 }
