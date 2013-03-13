@@ -184,18 +184,17 @@ void semsUpdateSensor(int fd,Sensor* s) {
 			temp = semsGetTemp(fd);
 			temp += 0.005;
 			temp *= 100;
-			printf("%f : ",temp);
 			s->temp = (int)temp;
-			printf("%d \n",s->temp);
-		if (s->type == SENSOR_TYPE_TH) {
-			rh = semsGetRH(fd);
-			rh = rh>100 ? 100 : rh;
-			rh = rh<0 ? 0 : rh;
-			s->rh = (unsigned int)(rh+.5);
+
+			if (s->type == SENSOR_TYPE_TH) {
+				rh = semsGetRH(fd);
+				rh = rh>100 ? 100 : rh;
+				rh = rh<0 ? 0 : rh;
+				s->rh = (unsigned int)(rh+.5);
+			}
 		}
-	    }
 	}
-	return;
+    return;
 }
 
 void Sensor_init(int fd, unsigned int port, Sensor * s) {

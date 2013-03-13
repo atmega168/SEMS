@@ -14,7 +14,7 @@ stop_server(int a) {
 
 int main (int argc, char **argv) {
   int agentx_subagent=1; /* change this if you want to be a SNMP master agent */
-  int background = 0; /* change this if you want to run in the background */
+  int background = 1; /* change this if you want to run in the background */
   int syslog = 0; /* change this if you want to use syslog */
 
   /* print log errors to syslog or stderr */
