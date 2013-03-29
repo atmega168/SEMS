@@ -18,6 +18,10 @@
 #define RD_BUFF_SIZE 25
 
 #define DELAY_READ 25 //milliseconds
+#define DELAY_MULTI 10
+
+#define RETRYS 5  //Max number of retries when reciving corrupt data
+
 
 int rd,i;
 char rd_buff[RD_BUFF_SIZE];
@@ -34,7 +38,7 @@ void semsComDisableMultiplex() {
 void semsSelectMultiplex(unsigned int port) {
         char bitmask = 0x00; //High nibble is which Multiplexer, Low nibble is which Port
         if (port <= PORTMAX) {
-            semsComDisableMultiplex();
+	semsComDisableMultiplex();
             if (port < 4) {
                 bitmask = 0x10; //Select the top row multiplexer
                 bitmask |= port;
@@ -46,7 +50,8 @@ void semsSelectMultiplex(unsigned int port) {
             bcm2835_gpio_write(PIN_S1,(bitmask & 0x02)>>1);
             bcm2835_gpio_write(PIN_EN_A,(bitmask & 0x10)>>4);
             bcm2835_gpio_write(PIN_EN_B,(bitmask & 0x20)>>5);
-        }
+	   delay(3);
+	}
 }
 
 void semsSendCMD(int fd, unsigned char cmd) {
@@ -73,6 +78,80 @@ float semsGetTemp(int fd) {
 	}
 	return temp;
 }
+
+float semsGetTempRaw(int fd) {
+	float temp = 0;
+	char *buff = (char *)&temp;
+	char chksum, mysum;
+	int i;
+	serialFlush (fd);
+	semsSendCMD(fd,'T');
+	delay(DELAY_READ);
+	if (serialDataAvail(fd) >= 5) {
+	   do {
+	      mysum = 0;
+	      for (i=0;i<4;i++){
+                *(buff+i) = serialGetchar(fd);
+                 mysum -= *(buff+i);
+	      }
+	      chksum = serialGetchar(fd);
+	   } while(mysum != chksum && trys < RETRYS);
+	   if (mysum != chksum) 
+	      return -275.15;
+	    return temp;
+	}
+	return -275.15;
+}
+
+
+short int semsGetRHRaw(int fd) {
+        short int rh = 0;
+        char *buff = (char *)&rh;
+        char chksum, mysum;
+        int i;
+        serialFlush (fd);
+        semsSendCMD(fd,'T');
+        delay(DELAY_READ);
+        if (serialDataAvail(fd) >= 3) {
+           do {
+              mysum = 0;
+              for (i=0;i<2;i++){
+                *(buff+i) = serialGetchar(fd);
+                 mysum -= *(buff+i);
+              }
+              chksum = serialGetchar(fd);
+           } while(mysum != chksum && trys < RETRYS);
+           if (mysum != chksum)
+              return -100;
+            return rh;
+        }
+        return -100;
+}
+
+short int semsGetTypeRaw(int fd) {
+        short int type = 0;
+        char *buff = (char *)&type;
+        char chksum, mysum;
+        int i;
+        serialFlush (fd);
+        semsSendCMD(fd,'T');
+        delay(DELAY_READ);
+        if (serialDataAvail(fd) >= 3) {
+           do {
+              mysum = 0;
+              for (i=0;i<2;i++){
+                *(buff+i) = serialGetchar(fd);
+                 mysum -= *(buff+i);
+              }
+              chksum = serialGetchar(fd);
+           } while(mysum != chksum && trys < RETRYS);
+           if (mysum != chksum)
+              return -1;
+            return type;
+        }
+        return -1;
+}
+
 
 float semsGetRH(int fd) {
 	float rh = 0;
@@ -175,6 +254,7 @@ void semsUpdateSensorInfo(int fd,Sensor* s) {
 }
 
 void semsUpdateSensor(int fd,Sensor* s) {
+	printf("Sensor Port %d \n",s->port);
 	semsSelectMultiplex(s->port-1);
 	semsUpdateSensorInfo(fd,s);
 	float temp;
