@@ -111,7 +111,7 @@ updateData(int sig) {
   for(indx = 0; indx < 8; indx++) 
 	semsUpdateSensor(fd,sensors[indx]);
   update_table();
-  alarm(30);
+  alarm(5);
 }
 
 
@@ -129,7 +129,7 @@ init_semsStatus(void)
  	 printf("\ncan't catch sigalarm\n");
  	 exit(1);
     }
-   alarm(30);
+   alarm(5);
 }
 
 /** handles requests for the semsSensorTable table, if anything else needs to be done */

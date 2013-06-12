@@ -82,12 +82,13 @@ float semsGetTemp(int fd) {
 float semsGetTempRaw(int fd) {
 	float temp = 0;
 	char *buff = (char *)&temp;
-	char chksum, mysum;
-	int i;
+	unsigned char chksum, mysum;
+	int i, trys=0;
 	serialFlush (fd);
 	semsSendCMD(fd,'T');
 	delay(DELAY_READ);
 	if (serialDataAvail(fd) >= 5) {
+	printf("Data Availibe\n");
 	   do {
 	      mysum = 0;
 	      for (i=0;i<4;i++){
@@ -95,7 +96,8 @@ float semsGetTempRaw(int fd) {
                  mysum -= *(buff+i);
 	      }
 	      chksum = serialGetchar(fd);
-	   } while(mysum != chksum && trys < RETRYS);
+	      printf("%d - %d",mysum,chksum);
+	   } while(mysum != chksum && trys++ < RETRYS);
 	   if (mysum != chksum) 
 	      return -275.15;
 	    return temp;
@@ -107,10 +109,10 @@ float semsGetTempRaw(int fd) {
 short int semsGetRHRaw(int fd) {
         short int rh = 0;
         char *buff = (char *)&rh;
-        char chksum, mysum;
-        int i;
+        unsigned char chksum, mysum;
+        int i, trys=0;
         serialFlush (fd);
-        semsSendCMD(fd,'T');
+        semsSendCMD(fd,'H');
         delay(DELAY_READ);
         if (serialDataAvail(fd) >= 3) {
            do {
@@ -120,7 +122,7 @@ short int semsGetRHRaw(int fd) {
                  mysum -= *(buff+i);
               }
               chksum = serialGetchar(fd);
-           } while(mysum != chksum && trys < RETRYS);
+           } while(mysum != chksum && trys++ < RETRYS);
            if (mysum != chksum)
               return -100;
             return rh;
@@ -131,10 +133,10 @@ short int semsGetRHRaw(int fd) {
 short int semsGetTypeRaw(int fd) {
         short int type = 0;
         char *buff = (char *)&type;
-        char chksum, mysum;
-        int i;
+        unsigned char chksum, mysum;
+        int i,trys=0;
         serialFlush (fd);
-        semsSendCMD(fd,'T');
+        semsSendCMD(fd,'S');
         delay(DELAY_READ);
         if (serialDataAvail(fd) >= 3) {
            do {
@@ -176,16 +178,20 @@ float semsGetRH(int fd) {
 
 float semsGetType(int fd) {
 	int count = 0;
-	float type = -1;
+	int type = -1;
+	serialFlush(fd);
 	while ((type <= 0 || type > SENSOR_TYPE_MAX) && count < 5) {
         semsSendCMD(fd,'S');
         delay(DELAY_READ);
-        for(i=0;serialDataAvail(fd) && i < RD_BUFF_SIZE-1; i++)
+        for(i=0;serialDataAvail(fd) && i < RD_BUFF_SIZE-1; i++){
                 rd_buff[i] = serialGetchar(fd);
+		printf("%c",rd_buff[i]);
+	}
         rd_buff[i] = '\0';
         if (i>0)
-          //type = return atof(rd_buff);
-			type = 2;
+	  //printf("%s\n",rd_buff);
+          //type = atof(rd_buff);
+		type = 2;
 		count++;
 	}
 	if (type == 0) 
@@ -233,12 +239,13 @@ int semsInitComs() {
 }
 
 void semsUpdateSensorInfo(int fd,Sensor* s) {	
-	float result;
+	int result;
 	/* While the result is out of range, which could mean bad data 
 	   or an unknown sensor, then ask for sensor information again.
 	   If we ask 3 times and still no good data, assume sensor
 	   is not present. */
 	result = semsGetType(fd);
+	printf("Sensor Type: %d\n",result);
 	if (result > 0 && result <= SENSOR_TYPE_MAX) {
 		s->type = (int)result;
 		s->status = 1;
@@ -261,16 +268,16 @@ void semsUpdateSensor(int fd,Sensor* s) {
 	float rh;
 	if (s->status == 1) {  //Is the sensor an active one?
 		if (s->type == SENSOR_TYPE_TEMP || s->type == SENSOR_TYPE_TH) {
-			temp = semsGetTemp(fd);
+			temp = semsGetTempRaw(fd);
 			temp += 0.005;
 			temp *= 100;
 			s->temp = (int)temp;
 
 			if (s->type == SENSOR_TYPE_TH) {
-				rh = semsGetRH(fd);
+				rh = semsGetRHRaw(fd);
 				rh = rh>100 ? 100 : rh;
 				rh = rh<0 ? 0 : rh;
-				s->rh = (unsigned int)(rh+.5);
+				s->rh = (unsigned int)(rh);
 			}
 		}
 	}

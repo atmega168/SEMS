@@ -17,8 +17,9 @@ typedef struct SemsSensor {
     unsigned int port;
     int status;
     int type;
-    char* data;
     char* location;
+    int temp;
+    unsigned int rh;
 } Sensor;
 
 void Sensor_init(int, unsigned int, Sensor*);
